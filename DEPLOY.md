@@ -38,6 +38,12 @@ python manage.py collectstatic
 
 ```
 gunicorn saas_contratos.wsgi:application --bind 0.0.0.0:8000
+
+No Coolify, prefira usar o start script:
+
+```
+bash start.sh
+```
 ```
 
 Use um process manager (systemd, supervisor) ou container.
