@@ -111,6 +111,7 @@ def receber_formulario(request, token):
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
         tmp_path = tmp.name
 
+    pdf_path = None
     try:
         gerar_contrato_docx(modelo_path, placeholders, tmp_path)
 
@@ -125,6 +126,13 @@ def receber_formulario(request, token):
             supabase_pdf_url = fazer_upload_supabase_pdf(
                 local_path=pdf_path,
                 destino=f"contratos/{link.organizacao.id}/{cliente.id}_{link.token}.pdf",
+            )
+        else:
+            import logging
+            logging.getLogger(__name__).warning(
+                "PDF nao gerado para link=%s modelo=%s",
+                link.token,
+                link.modelo_id,
             )
 
         contrato = Contrato.objects.create(
