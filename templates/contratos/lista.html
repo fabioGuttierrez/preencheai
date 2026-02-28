@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Contratos Gerados{% endblock %}
+{% block page_title %}Contratos Gerados{% endblock %}
+{% block active_contratos %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body p-0">
+    {% if contratos %}
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="px-4">Cliente</th>
+          <th>Modelo</th>
+          <th>Gerado em</th>
+          <th>Download</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contratos %}
+        <tr>
+          <td class="px-4">
+            <div class="fw-semibold">{{ c.cliente.nome }}</div>
+            <div class="text-muted small">{{ c.cliente.email }}</div>
+          </td>
+          <td class="text-muted">{{ c.modelo.nome|default:"—" }}</td>
+          <td class="text-muted small">{{ c.criado_em|date:"d/m/Y H:i" }}</td>
+          <td>
+            {% if c.supabase_pdf_url %}
+            <a href="{{ c.supabase_pdf_url }}" class="btn btn-outline-primary btn-sm" target="_blank">
+              <i class="bi bi-filetype-pdf me-1"></i>Baixar PDF
+            </a>
+            {% elif c.arquivo_pdf %}
+            <a href="{{ c.arquivo_pdf.url }}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-filetype-pdf me-1"></i>Baixar PDF
+            </a>
+            {% elif c.supabase_url %}
+            <a href="{{ c.supabase_url }}" class="btn btn-outline-primary btn-sm" target="_blank">
+              <i class="bi bi-download me-1"></i>Baixar
+            </a>
+            {% elif c.arquivo_docx %}
+            <a href="{{ c.arquivo_docx.url }}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-download me-1"></i>Baixar
+            </a>
+            {% else %}
+            <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-file-earmark-x fs-2 d-block mb-2"></i>
+      Nenhum contrato gerado ainda.
+      <a href="/links/novo/" class="d-block mt-2">Criar link para gerar contratos</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

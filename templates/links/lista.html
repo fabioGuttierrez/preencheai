@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Links de Formulário{% endblock %}
+{% block page_title %}Links de Formulário{% endblock %}
+{% block active_links %}active{% endblock %}
+
+{% block topbar_actions %}
+<a href="/links/novo/" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus-lg me-1"></i>Novo Link
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body p-0">
+    {% if links %}
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="px-4">Cliente</th>
+          <th>Modelo</th>
+          <th>Status</th>
+          <th>Criado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in links %}
+        <tr>
+          <td class="px-4 fw-semibold">{{ l.cliente.nome }}</td>
+          <td class="text-muted">{{ l.modelo.nome }}</td>
+          <td>
+            {% if l.utilizado %}
+            <span class="badge badge-status-usado rounded-pill px-3">Usado</span>
+            {% else %}
+            <span class="badge badge-status-ativo rounded-pill px-3">Aguardando</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">{{ l.criado_em|date:"d/m/Y H:i" }}</td>
+          <td class="text-end pe-4">
+            <a href="/links/{{ l.token }}/" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-link-45deg fs-2 d-block mb-2"></i>
+      Nenhum link criado ainda.
+      <a href="/links/novo/" class="d-block mt-2">Criar primeiro link</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

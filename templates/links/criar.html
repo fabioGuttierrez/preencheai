@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Novo Link{% endblock %}
+{% block page_title %}Gerar Link de Formulário{% endblock %}
+{% block active_links %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header py-3 px-4">
+        <i class="bi bi-link-45deg me-2 text-muted"></i>Novo Link de Formulário
+      </div>
+      <div class="card-body px-4 py-4">
+        <p class="text-muted small mb-4">
+          O link será enviado ao cliente para ele preencher os dados do contrato.
+          Após o preenchimento, o contrato .docx será gerado automaticamente.
+        </p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Cliente *</label>
+            <select name="cliente_id" class="form-select" required>
+              <option value="">— Selecione um cliente —</option>
+              {% for c in clientes %}
+              <option value="{{ c.id }}">{{ c.nome }} ({{ c.email }})</option>
+              {% endfor %}
+            </select>
+            {% if not clientes %}
+            <div class="form-text text-warning">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <a href="/clientes/novo/">Cadastre um cliente</a> primeiro.
+            </div>
+            {% endif %}
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold small">Modelo de Contrato *</label>
+            <select name="modelo_id" class="form-select" required>
+              <option value="">— Selecione um modelo —</option>
+              {% for m in modelos %}
+              <option value="{{ m.pk }}">{{ m.nome }}</option>
+              {% endfor %}
+            </select>
+            {% if not modelos %}
+            <div class="form-text text-warning">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <a href="/modelos/upload/">Envie um modelo</a> primeiro.
+            </div>
+            {% endif %}
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" {% if not clientes or not modelos %}disabled{% endif %}>
+              <i class="bi bi-link-45deg me-1"></i>Gerar Link
+            </button>
+            <a href="/links/" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

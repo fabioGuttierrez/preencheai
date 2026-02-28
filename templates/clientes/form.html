@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ acao }} Cliente{% endblock %}
+{% block page_title %}{{ acao }} Cliente{% endblock %}
+{% block active_clientes %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header py-3 px-4">
+        <i class="bi bi-person-plus me-2 text-muted"></i>{{ acao }} Cliente
+      </div>
+      <div class="card-body px-4 py-4">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Nome completo *</label>
+            <input type="text" name="nome" class="form-control" value="{{ cliente.nome|default:'' }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">CPF *</label>
+            <input type="text" name="cpf" class="form-control font-monospace" placeholder="000.000.000-00" value="{{ cliente.cpf|default:'' }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">E-mail *</label>
+            <input type="email" name="email" class="form-control" value="{{ cliente.email|default:'' }}" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold small">Telefone</label>
+            <input type="text" name="telefone" class="form-control" placeholder="(00) 00000-0000" value="{{ cliente.telefone|default:'' }}">
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>Salvar
+            </button>
+            <a href="/clientes/" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
