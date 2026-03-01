@@ -24,6 +24,7 @@
               <th>Tipo</th>
               <th>Obrigatorio</th>
               <th>Opcoes</th>
+              <th>Data por extenso</th>
             </tr>
           </thead>
           <tbody id="camposSortBody">
@@ -50,6 +51,9 @@
               </td>
               <td>
                 <input type="text" name="opcoes_{{ campo.id }}" value="{% if campo.opcoes %}{{ campo.opcoes|join:", " }}{% endif %}" class="form-control form-control-sm" placeholder="Separar por virgula">
+              </td>
+              <td class="text-center">
+                <input type="checkbox" name="data_extenso_{{ campo.id }}" {% if campo.data_extenso %}checked{% endif %} {% if campo.tipo != "date" %}disabled{% endif %}>
               </td>
             </tr>
             {% endfor %}

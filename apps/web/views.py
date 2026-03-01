@@ -273,6 +273,10 @@ def modelo_campos_config(request, pk):
             campo.ajuda = request.POST.get(f"ajuda_{campo.id}", "").strip()
             opcoes_raw = request.POST.get(f"opcoes_{campo.id}", "").strip()
             campo.opcoes = _parse_opcoes(opcoes_raw)
+            if campo.tipo == CampoTemplate.TIPO_DATE:
+                campo.data_extenso = request.POST.get(f"data_extenso_{campo.id}") == "on"
+            else:
+                campo.data_extenso = False
             if ordem_map:
                 campo.ordem = ordem_map.get(campo.id, campo.ordem)
             campo.save()

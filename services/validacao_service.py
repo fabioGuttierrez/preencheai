@@ -76,7 +76,10 @@ def _validar_valor(campo, valor):
         data = _parse_date(valor)
         if not data:
             return False, valor, f"Data invalida em '{campo.label}'."
-        valor = data.strftime("%d/%m/%Y")
+        if getattr(campo, "data_extenso", False):
+            valor = _format_date_extenso(data)
+        else:
+            valor = data.strftime("%d/%m/%Y")
 
     if campo.tipo == CampoTemplate.TIPO_NUMBER:
         numero = _parse_decimal(valor)
@@ -139,6 +142,25 @@ def _parse_date(text):
         except ValueError:
             continue
     return None
+
+
+def _format_date_extenso(data):
+    meses = [
+        "janeiro",
+        "fevereiro",
+        "março",
+        "abril",
+        "maio",
+        "junho",
+        "julho",
+        "agosto",
+        "setembro",
+        "outubro",
+        "novembro",
+        "dezembro",
+    ]
+    mes_nome = meses[data.month - 1]
+    return f"{data.day:02d} de {mes_nome} de {data.year}"
 
 
 def _validar_cpf(cpf: str) -> bool:

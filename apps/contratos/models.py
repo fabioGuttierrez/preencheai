@@ -62,6 +62,7 @@ class CampoTemplate(models.Model):
     mascara = models.CharField(max_length=100, blank=True)
     ajuda = models.CharField(max_length=255, blank=True)
     opcoes = models.JSONField(null=True, blank=True)
+    data_extenso = models.BooleanField(default=False)
     ordem = models.PositiveIntegerField(default=0)
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
