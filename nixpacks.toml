@@ -1,5 +1,5 @@
 [variables]
-NIXPACKS_APT_PACKAGES = "libreoffice"
+NIXPACKS_APT_PACKAGES = "libreoffice libreoffice-writer libreoffice-core"
 
 [phases.setup]
-apt_pkgs = ["libreoffice"]
+apt_pkgs = ["libreoffice", "libreoffice-writer", "libreoffice-core"]
