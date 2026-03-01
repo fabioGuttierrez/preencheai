@@ -407,6 +407,11 @@ def formulario_publico(request, token):
                         local_path=pdf_path,
                         destino=f"contratos/{link.organizacao.id}/{cliente.id}_{link.token}.pdf",
                     )
+                else:
+                    messages.warning(
+                        request,
+                        "PDF nao gerado. Verifique se o LibreOffice esta instalado e LIBREOFFICE_PATH configurado.",
+                    )
 
                 contrato = Contrato.objects.create(
                     organizacao=link.organizacao,

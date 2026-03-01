@@ -2,8 +2,7 @@ Django==4.2.9
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 python-docx==1.1.0
-# psycopg2-binary: instalar ao usar PostgreSQL (requer pg_config no sistema)
-# No Python 3.13+: pip install psycopg2-binary>=2.9.10
+psycopg2-binary==2.9.10
 python-decouple==3.8
 supabase==2.3.4
 # storage3 instalado automaticamente como dependência do supabase

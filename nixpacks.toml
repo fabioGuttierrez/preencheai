@@ -1,0 +1,5 @@
+[variables]
+NIXPACKS_APT_PACKAGES = "libreoffice"
+
+[phases.setup]
+apt_pkgs = ["libreoffice"]
