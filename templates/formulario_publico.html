@@ -27,16 +27,13 @@
 
   {% if sucesso %}
   <div class="text-center py-3">
-    <div class="success-icon"><i class="bi bi-check-lg"></i></div>
-    <h5 class="fw-bold">Contrato gerado com sucesso!</h5>
-    <p class="text-muted small mb-4">Seu contrato foi gerado e está pronto para download.</p>
-    {% if download_url %}
-    <a href="{{ download_url }}" class="btn btn-primary px-4" target="_blank">
-      <i class="bi bi-filetype-pdf me-2"></i>Baixar Contrato (PDF)
-    </a>
-    {% else %}
-    <p class="text-muted small">O contrato será enviado em breve.</p>
-    {% endif %}
+    <div class="success-icon"><i class="bi bi-hourglass-split"></i></div>
+    <h5 class="fw-bold">Recebemos seus dados!</h5>
+    <p class="text-muted small mb-3">Estamos processando as informações.</p>
+    <div class="d-flex align-items-center justify-content-center gap-2 text-muted small">
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      Enviaremos o contrato em breve.
+    </div>
   </div>
 
   {% else %}
