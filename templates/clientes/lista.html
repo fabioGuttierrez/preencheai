@@ -12,33 +12,36 @@
 {% block content %}
 <div class="card">
   <div class="card-header py-3 px-4">
-    <form method="get" class="d-flex gap-2" style="max-width:360px">
+    <form method="get" class="d-flex flex-column flex-sm-row gap-2" style="max-width:360px">
       <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Buscar por nome ou e-mail…">
-      <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i></button>
-      {% if q %}<a href="/clientes/" class="btn btn-outline-danger btn-sm"><i class="bi bi-x"></i></a>{% endif %}
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i></button>
+        {% if q %}<a href="/clientes/" class="btn btn-outline-danger btn-sm"><i class="bi bi-x"></i></a>{% endif %}
+      </div>
     </form>
   </div>
   <div class="card-body p-0">
     {% if clientes %}
-    <table class="table table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th class="px-4">Nome</th>
-          <th>CPF</th>
-          <th>E-mail</th>
-          <th>Telefone</th>
-          <th>Cadastrado</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="px-4">Nome</th>
+            <th class="d-none d-md-table-cell">CPF</th>
+            <th class="d-none d-lg-table-cell">E-mail</th>
+            <th class="d-none d-xl-table-cell">Telefone</th>
+            <th class="d-none d-md-table-cell">Cadastrado</th>
+            <th class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
         {% for c in clientes %}
         <tr>
           <td class="px-4 fw-semibold">{{ c.nome }}</td>
-          <td class="text-muted font-monospace">{{ c.cpf }}</td>
-          <td>{{ c.email }}</td>
-          <td class="text-muted">{{ c.telefone|default:"—" }}</td>
-          <td class="text-muted small">{{ c.criado_em|date:"d/m/Y" }}</td>
+          <td class="text-muted font-monospace d-none d-md-table-cell">{{ c.cpf }}</td>
+          <td class="d-none d-lg-table-cell">{{ c.email }}</td>
+          <td class="text-muted d-none d-xl-table-cell">{{ c.telefone|default:"—" }}</td>
+          <td class="text-muted small d-none d-md-table-cell">{{ c.criado_em|date:"d/m/Y" }}</td>
           <td class="text-end pe-4">
             <a href="/clientes/{{ c.id }}/editar/" class="btn btn-sm btn-outline-secondary me-1">
               <i class="bi bi-pencil"></i>
@@ -70,8 +73,9 @@
           </td>
         </tr>
         {% endfor %}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
     {% else %}
     <div class="text-center py-5 text-muted">
       <i class="bi bi-people fs-2 d-block mb-2"></i>

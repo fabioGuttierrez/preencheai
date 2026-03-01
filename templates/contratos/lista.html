@@ -7,25 +7,26 @@
 <div class="card">
   <div class="card-body p-0">
     {% if contratos %}
-    <table class="table table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th class="px-4">Cliente</th>
-          <th>Modelo</th>
-          <th>Gerado em</th>
-          <th>Download</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="px-4">Cliente</th>
+            <th class="d-none d-md-table-cell">Modelo</th>
+            <th class="d-none d-lg-table-cell">Gerado em</th>
+            <th class="text-end">Download</th>
+          </tr>
+        </thead>
+        <tbody>
         {% for c in contratos %}
         <tr>
           <td class="px-4">
             <div class="fw-semibold">{{ c.cliente.nome }}</div>
             <div class="text-muted small">{{ c.cliente.email }}</div>
           </td>
-          <td class="text-muted">{{ c.modelo.nome|default:"—" }}</td>
-          <td class="text-muted small">{{ c.criado_em|date:"d/m/Y H:i" }}</td>
-          <td>
+          <td class="text-muted d-none d-md-table-cell">{{ c.modelo.nome|default:"—" }}</td>
+          <td class="text-muted small d-none d-lg-table-cell">{{ c.criado_em|date:"d/m/Y H:i" }}</td>
+          <td class="text-end">
             {% if c.supabase_pdf_url %}
             <a href="{{ c.supabase_pdf_url }}" class="btn btn-outline-primary btn-sm" target="_blank">
               <i class="bi bi-filetype-pdf me-1"></i>Baixar PDF
@@ -48,8 +49,9 @@
           </td>
         </tr>
         {% endfor %}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
     {% else %}
     <div class="text-center py-5 text-muted">
       <i class="bi bi-file-earmark-x fs-2 d-block mb-2"></i>

@@ -256,6 +256,15 @@ def modelo_campos_config(request, pk):
     campos = modelo.campos.filter(ativo=True).order_by("ordem", "id")
 
     if request.method == "POST":
+        ordem_lista_raw = request.POST.get("ordem_lista", "").strip()
+        ordem_map = {}
+        if ordem_lista_raw:
+            try:
+                ordem_ids = [int(item) for item in ordem_lista_raw.split(",") if item.strip().isdigit()]
+                ordem_map = {campo_id: idx + 1 for idx, campo_id in enumerate(ordem_ids)}
+            except ValueError:
+                ordem_map = {}
+
         for campo in campos:
             campo.label = request.POST.get(f"label_{campo.id}", campo.label).strip() or campo.label
             campo.tipo = request.POST.get(f"tipo_{campo.id}", campo.tipo)
@@ -264,8 +273,8 @@ def modelo_campos_config(request, pk):
             campo.ajuda = request.POST.get(f"ajuda_{campo.id}", "").strip()
             opcoes_raw = request.POST.get(f"opcoes_{campo.id}", "").strip()
             campo.opcoes = _parse_opcoes(opcoes_raw)
-            ordem_raw = request.POST.get(f"ordem_{campo.id}", str(campo.ordem)).strip()
-            campo.ordem = int(ordem_raw) if ordem_raw.isdigit() else campo.ordem
+            if ordem_map:
+                campo.ordem = ordem_map.get(campo.id, campo.ordem)
             campo.save()
 
         messages.success(request, "Campos atualizados com sucesso.")
