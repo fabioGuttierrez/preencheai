@@ -1,0 +1,3 @@
+# Base para modelos SQLAlchemy
+
+# ...existing code...

@@ -1,0 +1,3 @@
+# Funções de segurança e autenticação
+
+# ...existing code...

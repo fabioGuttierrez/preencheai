@@ -1,0 +1,3 @@
+# Configurações principais do sistema
+
+# ...existing code...

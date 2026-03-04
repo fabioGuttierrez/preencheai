@@ -1,0 +1,6 @@
+- [x] Estrutura inicial de pastas criada
+- [ ] Adicionar dependências e arquivos de configuração
+- [ ] Implementar modelos de banco
+- [ ] Implementar serviços principais
+- [ ] Configurar Docker
+- [ ] Documentar e preparar MVP
