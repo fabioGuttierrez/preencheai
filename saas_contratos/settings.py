@@ -37,7 +37,71 @@ LOCAL_APPS = [
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/app/"
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = ["jazzmin"] + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+JAZZMIN_SETTINGS = {
+    "site_title": "preencheai Admin",
+    "site_header": "preencheai",
+    "site_brand": "preencheai",
+    "welcome_sign": "Bem-vindo ao Painel Administrativo",
+    "copyright": "preencheai",
+    "topmenu_links": [
+        {"name": "Início", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Ver site", "url": "/", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "order_with_respect_to": ["core", "clientes", "contratos", "formularios"],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "core.Organizacao": "fas fa-building",
+        "core.Usuario": "fas fa-user-tie",
+        "clientes.Cliente": "fas fa-user-friends",
+        "contratos.ModeloContrato": "fas fa-file-alt",
+        "contratos.Contrato": "fas fa-file-contract",
+        "contratos.CampoTemplate": "fas fa-list-ul",
+        "contratos.ContratoEvento": "fas fa-history",
+        "formularios.LinkFormulario": "fas fa-link",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "show_ui_builder": False,
+    "changeform_format": "horizontal_tabs",
+    "language_chooser": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-indigo",
+    "accent": "accent-indigo",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-indigo",
+    "sidebar_nav_small_text": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

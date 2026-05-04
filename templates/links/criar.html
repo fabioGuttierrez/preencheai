@@ -22,7 +22,7 @@
             <select name="cliente_id" class="form-select" required>
               <option value="">— Selecione um cliente —</option>
               {% for c in clientes %}
-              <option value="{{ c.id }}">{{ c.nome }} ({{ c.email }})</option>
+              <option value="{{ c.id }}">{{ c.nome }}</option>
               {% endfor %}
             </select>
             {% if not clientes %}
@@ -31,6 +31,11 @@
               <a href="/clientes/novo/">Cadastre um cliente</a> primeiro.
             </div>
             {% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">E-mail para envio do link <span class="text-muted fw-normal">(opcional)</span></label>
+            <input type="email" name="email_destinatario" class="form-control" placeholder="destinatario@exemplo.com">
+            <div class="form-text">Se informado, o link será enviado por e-mail automaticamente.</div>
           </div>
           <div class="mb-4">
             <label class="form-label fw-semibold small">Modelo de Contrato *</label>

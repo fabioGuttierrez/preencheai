@@ -127,7 +127,7 @@ def clientes_lista(request):
     q = request.GET.get("q", "").strip()
     clientes = Cliente.objects.filter(organizacao=org)
     if q:
-        clientes = clientes.filter(nome__icontains=q) | clientes.filter(email__icontains=q)
+        clientes = clientes.filter(nome__icontains=q) | clientes.filter(telefone__icontains=q)
     clientes = clientes.order_by("-criado_em")
     return render(request, "clientes/lista.html", {"clientes": clientes, "q": q})
 
@@ -140,16 +140,14 @@ def cliente_criar(request):
 
     if request.method == "POST":
         nome = request.POST.get("nome", "").strip()
-        cpf = request.POST.get("cpf", "").strip()
-        email = request.POST.get("email", "").strip()
         telefone = request.POST.get("telefone", "").strip()
 
-        if not nome or not cpf or not email:
-            messages.error(request, "Nome, CPF e e-mail são obrigatórios.")
+        if not nome:
+            messages.error(request, "Nome é obrigatório.")
         else:
             Cliente.objects.create(
                 organizacao=request.user.organizacao,
-                nome=nome, cpf=cpf, email=email, telefone=telefone,
+                nome=nome, telefone=telefone,
             )
             messages.success(request, f"Cliente {nome} criado com sucesso.")
             return redirect("clientes_lista")
@@ -164,8 +162,6 @@ def cliente_editar(request, pk):
 
     if request.method == "POST":
         cliente.nome = request.POST.get("nome", "").strip()
-        cliente.cpf = request.POST.get("cpf", "").strip()
-        cliente.email = request.POST.get("email", "").strip()
         cliente.telefone = request.POST.get("telefone", "").strip()
         cliente.save()
         messages.success(request, "Cliente atualizado.")
@@ -329,16 +325,20 @@ def link_criar(request):
         link = LinkFormulario.objects.create(
             organizacao=org, cliente=cliente, modelo=modelo,
         )
+        email_destinatario = request.POST.get("email_destinatario", "").strip()
+        link.email_destinatario = email_destinatario
+        link.save()
         link_url = request.build_absolute_uri(f"/formulario/{link.token}/")
-        enviar_email(
-            destinatario=cliente.email,
-            assunto="Seu formulario de contrato",
-            mensagem=(
-                f"Ola {cliente.nome},\n\n"
-                f"Acesse o link para preencher os dados do contrato:\n{link_url}\n\n"
-                "Se voce nao reconhece este email, ignore esta mensagem."
-            ),
-        )
+        if email_destinatario:
+            enviar_email(
+                destinatario=email_destinatario,
+                assunto="Seu formulario de contrato",
+                mensagem=(
+                    f"Ola {cliente.nome},\n\n"
+                    f"Acesse o link para preencher os dados do contrato:\n{link_url}\n\n"
+                    "Se voce nao reconhece este email, ignore esta mensagem."
+                ),
+            )
         messages.success(request, "Link gerado com sucesso!")
         return redirect("link_detalhe", token=link.token)
 
@@ -395,8 +395,6 @@ def formulario_publico(request, token):
             cliente = link.cliente
             placeholders = {
                 "NOME": cliente.nome,
-                "CPF": cliente.cpf,
-                "EMAIL": cliente.email,
                 "TELEFONE": cliente.telefone,
             }
             placeholders.update(dados)
@@ -462,9 +460,9 @@ def formulario_publico(request, token):
                 elif contrato.arquivo_docx:
                     download_url = request.build_absolute_uri(contrato.arquivo_docx.url)
 
-                if download_url:
+                if download_url and link.email_destinatario:
                     enviar_email(
-                        destinatario=cliente.email,
+                        destinatario=link.email_destinatario,
                         assunto="Contrato gerado (PDF)",
                         mensagem=(
                             f"Ola {cliente.nome},\n\n"

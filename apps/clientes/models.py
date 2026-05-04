@@ -11,8 +11,6 @@ class Cliente(models.Model):
         related_name="clientes",
     )
     nome = models.CharField(max_length=255)
-    cpf = models.CharField(max_length=14)
-    email = models.EmailField()
     telefone = models.CharField(max_length=20, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 

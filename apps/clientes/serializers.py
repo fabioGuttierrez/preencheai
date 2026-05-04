@@ -5,7 +5,7 @@ from .models import Cliente
 class ClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cliente
-        fields = ["id", "nome", "cpf", "email", "telefone", "criado_em"]
+        fields = ["id", "nome", "telefone", "criado_em"]
         read_only_fields = ["id", "criado_em"]
 
     def create(self, validated_data):

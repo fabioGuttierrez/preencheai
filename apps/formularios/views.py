@@ -31,15 +31,16 @@ def links_list(request):
     if serializer.is_valid():
         link = serializer.save()
         link_url = request.build_absolute_uri(f"/formulario/{link.token}/")
-        enviar_email(
-            destinatario=link.cliente.email,
-            assunto="Seu formulario de contrato",
-            mensagem=(
-                f"Ola {link.cliente.nome},\n\n"
-                f"Acesse o link para preencher os dados do contrato:\n{link_url}\n\n"
-                "Se voce nao reconhece este email, ignore esta mensagem."
-            ),
-        )
+        if link.email_destinatario:
+            enviar_email(
+                destinatario=link.email_destinatario,
+                assunto="Seu formulario de contrato",
+                mensagem=(
+                    f"Ola {link.cliente.nome},\n\n"
+                    f"Acesse o link para preencher os dados do contrato:\n{link_url}\n\n"
+                    "Se voce nao reconhece este email, ignore esta mensagem."
+                ),
+            )
         return Response(LinkFormularioSerializer(link, context={"request": request}).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -94,8 +95,6 @@ def receber_formulario(request, token):
 
     placeholders = {
         "NOME": cliente.nome,
-        "CPF": cliente.cpf,
-        "EMAIL": cliente.email,
         "TELEFONE": cliente.telefone,
     }
     placeholders.update(dados)
@@ -177,9 +176,9 @@ def receber_formulario(request, token):
         if not download_url:
             download_url = supabase_url or ""
 
-        if download_url:
+        if download_url and link.email_destinatario:
             enviar_email(
-                destinatario=cliente.email,
+                destinatario=link.email_destinatario,
                 assunto="Contrato gerado (PDF)",
                 mensagem=(
                     f"Ola {cliente.nome},\n\n"

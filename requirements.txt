@@ -9,3 +9,4 @@ supabase==2.3.4
 django-cors-headers==4.3.1
 dj-database-url==2.1.0
 gunicorn==22.0.0  # Linux/Mac only (deploy)
+django-jazzmin==3.0.4

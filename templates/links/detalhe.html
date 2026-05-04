@@ -42,7 +42,7 @@
           <div class="col-6">
             <div class="small text-muted mb-1">Cliente</div>
             <div class="fw-semibold">{{ link.cliente.nome }}</div>
-            <div class="text-muted small">{{ link.cliente.email }}</div>
+            {% if link.email_destinatario %}<div class="text-muted small">{{ link.email_destinatario }}</div>{% endif %}
           </div>
           <div class="col-6">
             <div class="small text-muted mb-1">Modelo</div>

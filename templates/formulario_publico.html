@@ -72,7 +72,7 @@
 
       {% else %}
       <input
-        type="{% if campo.tipo == "email" %}email{% elif campo.tipo == "number" or campo.tipo == "currency" %}text{% elif campo.tipo == "date" %}text{% elif campo.tipo == "datetime" %}text{% elif campo.tipo == "phone" %}text{% else %}text{% endif %}"
+        type="{% if campo.tipo == "email" %}email{% elif campo.tipo == "number" or campo.tipo == "currency" %}text{% elif campo.tipo == "date" %}date{% elif campo.tipo == "datetime" %}text{% elif campo.tipo == "phone" %}text{% else %}text{% endif %}"
         name="{{ campo.placeholder }}"
         class="form-control"
         {% if campo.mascara %}placeholder="{{ campo.mascara }}"{% endif %}
@@ -84,6 +84,8 @@
       <div class="form-text">{{ campo.ajuda }}</div>
       {% elif campo.tipo == "currency" %}
       <div class="form-text">Informe apenas numeros; o R$ sera adicionado automaticamente.</div>
+      {% elif campo.tipo == "date" %}
+      <div class="form-text">Selecione a data no calendário ou digite no formato DD/MM/AAAA.</div>
       {% endif %}
     </div>
     {% endfor %}

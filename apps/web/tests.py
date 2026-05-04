@@ -24,8 +24,6 @@ class FluxoContratoTest(TestCase):
         self.cliente = Cliente.objects.create(
             organizacao=self.org,
             nome="Cliente Teste",
-            cpf="123.456.789-09",
-            email="cliente@teste.com",
             telefone="11999999999",
         )
 

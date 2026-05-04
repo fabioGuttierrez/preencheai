@@ -22,6 +22,7 @@ class LinkFormulario(models.Model):
         related_name="links_formulario",
     )
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    email_destinatario = models.EmailField(blank=True, default="")
     utilizado = models.BooleanField(default=False)
     criado_em = models.DateTimeField(auto_now_add=True)
 
