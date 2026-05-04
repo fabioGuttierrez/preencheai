@@ -3,3 +3,6 @@ NIXPACKS_APT_PACKAGES = "libreoffice libreoffice-writer libreoffice-core"
 
 [phases.setup]
 apt_pkgs = ["libreoffice", "libreoffice-writer", "libreoffice-core"]
+
+[start]
+cmd = "bash start.sh"
