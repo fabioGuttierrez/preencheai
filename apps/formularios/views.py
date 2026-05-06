@@ -153,7 +153,7 @@ def receber_formulario(request, token):
             from django.core.files import File
             with open(tmp_path, "rb") as f:
                 contrato.arquivo_docx.save(
-                    f"contratos/{cliente.id}_{link.token}.docx",
+                    f"{cliente.id}_{link.token}.docx",
                     File(f),
                     save=True,
                 )
@@ -162,7 +162,7 @@ def receber_formulario(request, token):
             from django.core.files import File
             with open(pdf_path, "rb") as f:
                 contrato.arquivo_pdf.save(
-                    f"contratos/pdf/{cliente.id}_{link.token}.pdf",
+                    f"{cliente.id}_{link.token}.pdf",
                     File(f),
                     save=True,
                 )

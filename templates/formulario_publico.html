@@ -25,7 +25,14 @@
     <p class="text-muted small">Olá, <strong>{{ link.cliente.nome }}</strong>! Preencha os dados abaixo.</p>
   </div>
 
-  {% if sucesso %}
+  {% if ja_utilizado %}
+  <div class="text-center py-3">
+    <div class="success-icon" style="background:#fee2e2; color:#dc2626;"><i class="bi bi-x-circle-fill"></i></div>
+    <h5 class="fw-bold">Formulário já enviado</h5>
+    <p class="text-muted small">Este link já foi utilizado e não pode ser acessado novamente.<br>Se precisar de ajuda, entre em contato com quem te enviou este link.</p>
+  </div>
+
+  {% elif sucesso %}
   <div class="text-center py-3">
     <div class="success-icon"><i class="bi bi-hourglass-split"></i></div>
     <h5 class="fw-bold">Recebemos seus dados!</h5>

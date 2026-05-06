@@ -363,7 +363,9 @@ def formulario_publico(request, token):
     from django.core.files import File
     import tempfile, os
 
-    link = get_object_or_404(LinkFormulario, token=token, utilizado=False)
+    link = get_object_or_404(LinkFormulario, token=token)
+    if link.utilizado:
+        return render(request, "formulario_publico.html", {"link": link, "ja_utilizado": True})
     sucesso = False
     download_url = ""
     campos = link.modelo.campos.filter(ativo=True).order_by("ordem", "id")
@@ -442,14 +444,14 @@ def formulario_publico(request, token):
                 if not supabase_url:
                     with open(tmp_path, "rb") as f:
                         contrato.arquivo_docx.save(
-                            f"contratos/{cliente.id}_{link.token}.docx",
+                            f"{cliente.id}_{link.token}.docx",
                             File(f), save=True,
                         )
                 if pdf_path:
                     if not supabase_pdf_url:
                         with open(pdf_path, "rb") as f:
                             contrato.arquivo_pdf.save(
-                                f"contratos/pdf/{cliente.id}_{link.token}.pdf",
+                                f"{cliente.id}_{link.token}.pdf",
                                 File(f), save=True,
                             )
                         download_url = request.build_absolute_uri(contrato.arquivo_pdf.url)
