@@ -1,8 +1,15 @@
+import logging
+import os
+import tempfile
+
+from django.db import transaction
+from django.core.files import File
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+
 from .models import LinkFormulario
 from .serializers import LinkFormularioSerializer
 from apps.clientes.models import Cliente
@@ -13,8 +20,8 @@ from services.pdf_service import converter_docx_para_pdf
 from services.validacao_service import validar_campos_payload
 from services.email_service import enviar_email
 from services.auditoria_service import registrar_evento
-import os
-import tempfile
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(["GET", "POST"])
@@ -41,7 +48,10 @@ def links_list(request):
                     "Se voce nao reconhece este email, ignore esta mensagem."
                 ),
             )
-        return Response(LinkFormularioSerializer(link, context={"request": request}).data, status=status.HTTP_201_CREATED)
+        return Response(
+            LinkFormularioSerializer(link, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -75,43 +85,44 @@ def formulario_info(request, token):
 def receber_formulario(request, token):
     link = get_object_or_404(LinkFormulario, token=token, utilizado=False)
     campos = link.modelo.campos.filter(ativo=True).order_by("ordem", "id")
+
     if not campos.exists():
         return Response(
             {"erros": ["Nenhum campo configurado para este modelo."]},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    aceite = request.data.get("aceite_lgpd")
-    if not aceite:
+    if not request.data.get("aceite_lgpd"):
         return Response(
             {"erros": ["Voce precisa aceitar os Termos e a Politica de Privacidade."]},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
     valido, dados, erros = validar_campos_payload(campos, request.data)
     if not valido:
         return Response({"erros": erros}, status=status.HTTP_400_BAD_REQUEST)
 
     cliente = link.cliente
-
-    placeholders = {
-        "NOME": cliente.nome,
-        "TELEFONE": cliente.telefone,
-    }
+    placeholders = {"NOME": cliente.nome, "TELEFONE": cliente.telefone}
     placeholders.update(dados)
 
-    try:
-        modelo_path = link.modelo.arquivo_docx.path
-    except Exception:
+    modelo_path = link.modelo.arquivo_docx.path
+    if not os.path.exists(modelo_path):
+        logger.error(
+            "Template nao encontrado: path=%s modelo_id=%s link=%s",
+            modelo_path, link.modelo_id, link.token,
+        )
         return Response(
-            {"erro": "Arquivo do modelo não encontrado no servidor."},
+            {"erro": "Arquivo do modelo nao encontrado. Contate o administrador."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
-        tmp_path = tmp.name
-
+    tmp_path = None
     pdf_path = None
     try:
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+            tmp_path = tmp.name
+
         gerar_contrato_docx(modelo_path, placeholders, tmp_path)
 
         supabase_url = fazer_upload_supabase(
@@ -127,48 +138,40 @@ def receber_formulario(request, token):
                 destino=f"contratos/{link.organizacao.id}/{cliente.id}_{link.token}.pdf",
             )
         else:
-            import logging
-            logging.getLogger(__name__).warning(
-                "PDF nao gerado para link=%s modelo=%s",
-                link.token,
-                link.modelo_id,
+            logger.warning("PDF nao gerado para link=%s modelo=%s", link.token, link.modelo_id)
+
+        with transaction.atomic():
+            updated = LinkFormulario.objects.filter(pk=link.pk, utilizado=False).update(utilizado=True)
+            if updated == 0:
+                return Response(
+                    {"erro": "Este formulario ja foi utilizado."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            contrato = Contrato.objects.create(
+                organizacao=link.organizacao,
+                cliente=cliente,
+                modelo=link.modelo,
+                supabase_url=supabase_url or "",
+                supabase_pdf_url=supabase_pdf_url or "",
+            )
+            registrar_evento(
+                contrato=contrato,
+                acao="contrato_gerado",
+                usuario=None,
+                detalhes="Gerado via API publica",
             )
 
-        contrato = Contrato.objects.create(
-            organizacao=link.organizacao,
-            cliente=cliente,
-            modelo=link.modelo,
-            supabase_url=supabase_url or "",
-            supabase_pdf_url=supabase_pdf_url or "",
-        )
-
-        registrar_evento(
-            contrato=contrato,
-            acao="contrato_gerado",
-            usuario=None,
-            detalhes="Gerado via API publica",
-        )
-
-        if not supabase_url:
-            from django.core.files import File
-            with open(tmp_path, "rb") as f:
-                contrato.arquivo_docx.save(
-                    f"{cliente.id}_{link.token}.docx",
-                    File(f),
-                    save=True,
-                )
-
-        if pdf_path and not supabase_pdf_url:
-            from django.core.files import File
-            with open(pdf_path, "rb") as f:
-                contrato.arquivo_pdf.save(
-                    f"{cliente.id}_{link.token}.pdf",
-                    File(f),
-                    save=True,
-                )
-
-        link.utilizado = True
-        link.save()
+            if not supabase_url:
+                with open(tmp_path, "rb") as f:
+                    contrato.arquivo_docx.save(
+                        f"{cliente.id}_{link.token}.docx", File(f), save=True,
+                    )
+            if pdf_path and not supabase_pdf_url:
+                with open(pdf_path, "rb") as f:
+                    contrato.arquivo_pdf.save(
+                        f"{cliente.id}_{link.token}.pdf", File(f), save=True,
+                    )
 
         download_url = supabase_pdf_url or ""
         if not download_url and contrato.arquivo_pdf:
@@ -187,16 +190,24 @@ def receber_formulario(request, token):
                 ),
             )
 
+        logger.info("Contrato gerado com sucesso: contrato_id=%s link=%s", contrato.id, link.token)
         return Response({
             "status": "contrato_gerado",
             "contrato_id": str(contrato.id),
             "download_url": download_url,
         })
 
+    except Exception:
+        logger.exception(
+            "Erro ao gerar contrato: link=%s modelo=%s org=%s",
+            link.token, link.modelo_id, link.organizacao_id,
+        )
+        return Response(
+            {"erro": "Erro ao gerar o contrato. Tente novamente ou contate o suporte."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
     finally:
         if pdf_path and os.path.exists(pdf_path):
             os.remove(pdf_path)
-        if os.path.exists(tmp_path):
+        if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
-
-

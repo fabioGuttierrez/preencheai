@@ -113,6 +113,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "saas_contratos.middleware.ErrorLoggingMiddleware",
 ]
 
 ROOT_URLCONF = "saas_contratos.urls"
@@ -216,3 +217,26 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="preencheai <contato@p
 
 # LibreOffice (soffice) path for PDF conversion
 LIBREOFFICE_PATH = config("LIBREOFFICE_PATH", default="soffice")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "services": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+    },
+}

@@ -1,20 +1,27 @@
-from django.shortcuts import render, redirect, get_object_or_404
+import logging
+import os
+import tempfile
+
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
+from django.core.files import File
+from django.db import transaction
 from django.db.models import Count
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
-from django.utils import timezone
 
 from apps.clientes.models import Cliente
 from apps.contratos.models import ModeloContrato, Contrato, CampoTemplate
 from apps.formularios.models import LinkFormulario
 from apps.core.models import Organizacao, Usuario
-from services.contrato_service import extrair_placeholders_docx
+from services.contrato_service import extrair_placeholders_docx, validar_consistencia_modelo
 from services.email_service import enviar_email
 from services.auditoria_service import registrar_evento
 from services.validacao_service import validar_campos_post
+
+logger = logging.getLogger(__name__)
 
 
 def landing(request):
@@ -206,10 +213,10 @@ def modelo_upload(request):
                 nome=nome,
                 arquivo_docx=arquivo,
             )
-            placeholders = []
             try:
                 placeholders = extrair_placeholders_docx(modelo.arquivo_docx.path)
             except Exception:
+                logger.exception("Erro ao extrair placeholders do modelo id=%s", modelo.pk)
                 placeholders = []
 
             for ordem, placeholder in enumerate(placeholders, start=1):
@@ -225,6 +232,14 @@ def modelo_upload(request):
                 )
 
             if placeholders:
+                consistencia = validar_consistencia_modelo(modelo)
+                if not consistencia["ok"]:
+                    if consistencia.get("no_docx_sem_campo"):
+                        messages.warning(
+                            request,
+                            f"Placeholders no docx sem campo configurado: "
+                            f"{', '.join(consistencia['no_docx_sem_campo'])}",
+                        )
                 messages.success(request, f"Modelo '{nome}' enviado e campos detectados.")
                 return redirect("modelo_campos_config", pk=modelo.pk)
 
@@ -356,16 +371,14 @@ def link_detalhe(request, token):
 # ─── Formulário Público ───────────────────────────────────────────────────────
 
 def formulario_publico(request, token):
-    from apps.contratos.models import Contrato
     from services.contrato_service import gerar_contrato_docx
     from services.storage_service import fazer_upload_supabase, fazer_upload_supabase_pdf
     from services.pdf_service import converter_docx_para_pdf
-    from django.core.files import File
-    import tempfile, os
 
     link = get_object_or_404(LinkFormulario, token=token)
     if link.utilizado:
         return render(request, "formulario_publico.html", {"link": link, "ja_utilizado": True})
+
     sucesso = False
     download_url = ""
     campos = link.modelo.campos.filter(ativo=True).order_by("ordem", "id")
@@ -374,19 +387,13 @@ def formulario_publico(request, token):
         if not campos:
             messages.error(request, "Nenhum campo foi configurado para este contrato.")
             return render(request, "formulario_publico.html", {
-                "link": link,
-                "sucesso": False,
-                "download_url": "",
-                "campos": campos,
+                "link": link, "sucesso": False, "download_url": "", "campos": campos,
             })
 
         if not request.POST.get("aceite_lgpd"):
             messages.error(request, "Voce precisa aceitar os Termos e a Politica de Privacidade.")
             return render(request, "formulario_publico.html", {
-                "link": link,
-                "sucesso": False,
-                "download_url": "",
-                "campos": campos,
+                "link": link, "sucesso": False, "download_url": "", "campos": campos,
             })
 
         valido, dados, erros = validar_campos_post(campos, request.POST)
@@ -395,14 +402,26 @@ def formulario_publico(request, token):
                 messages.error(request, erro)
         else:
             cliente = link.cliente
-            placeholders = {
-                "NOME": cliente.nome,
-                "TELEFONE": cliente.telefone,
-            }
+            placeholders = {"NOME": cliente.nome, "TELEFONE": cliente.telefone}
             placeholders.update(dados)
 
+            modelo_path = link.modelo.arquivo_docx.path
+            if not os.path.exists(modelo_path):
+                logger.error(
+                    "Template nao encontrado: path=%s modelo_id=%s link=%s",
+                    modelo_path, link.modelo_id, link.token,
+                )
+                messages.error(
+                    request,
+                    "O arquivo do modelo nao foi encontrado. Contate o administrador.",
+                )
+                return render(request, "formulario_publico.html", {
+                    "link": link, "sucesso": False, "download_url": "", "campos": campos,
+                })
+
+            tmp_path = None
+            pdf_path = None
             try:
-                modelo_path = link.modelo.arquivo_docx.path
                 with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
                     tmp_path = tmp.name
 
@@ -421,67 +440,85 @@ def formulario_publico(request, token):
                         destino=f"contratos/{link.organizacao.id}/{cliente.id}_{link.token}.pdf",
                     )
                 else:
+                    logger.warning(
+                        "PDF nao gerado para link=%s modelo=%s", link.token, link.modelo_id,
+                    )
                     messages.warning(
                         request,
-                        "PDF nao gerado. Verifique se o LibreOffice esta instalado e LIBREOFFICE_PATH configurado.",
+                        "PDF nao gerado. Verifique se o LibreOffice esta configurado.",
                     )
 
-                contrato = Contrato.objects.create(
-                    organizacao=link.organizacao,
-                    cliente=cliente,
-                    modelo=link.modelo,
-                    supabase_url=supabase_url or "",
-                    supabase_pdf_url=supabase_pdf_url or "",
-                )
+                with transaction.atomic():
+                    updated = LinkFormulario.objects.filter(
+                        pk=link.pk, utilizado=False
+                    ).update(utilizado=True)
 
-                registrar_evento(
-                    contrato=contrato,
-                    acao="contrato_gerado",
-                    usuario=None,
-                    detalhes="Gerado via formulario publico",
-                )
-
-                if not supabase_url:
-                    with open(tmp_path, "rb") as f:
-                        contrato.arquivo_docx.save(
-                            f"{cliente.id}_{link.token}.docx",
-                            File(f), save=True,
-                        )
-                if pdf_path:
-                    if not supabase_pdf_url:
-                        with open(pdf_path, "rb") as f:
-                            contrato.arquivo_pdf.save(
-                                f"{cliente.id}_{link.token}.pdf",
-                                File(f), save=True,
-                            )
-                        download_url = request.build_absolute_uri(contrato.arquivo_pdf.url)
+                    if updated == 0:
+                        messages.error(request, "Este formulario ja foi enviado.")
                     else:
-                        download_url = supabase_pdf_url
-                elif supabase_url:
-                    download_url = supabase_url
-                elif contrato.arquivo_docx:
-                    download_url = request.build_absolute_uri(contrato.arquivo_docx.url)
+                        contrato = Contrato.objects.create(
+                            organizacao=link.organizacao,
+                            cliente=cliente,
+                            modelo=link.modelo,
+                            supabase_url=supabase_url or "",
+                            supabase_pdf_url=supabase_pdf_url or "",
+                        )
+                        registrar_evento(
+                            contrato=contrato,
+                            acao="contrato_gerado",
+                            usuario=None,
+                            detalhes="Gerado via formulario publico",
+                        )
+                        if not supabase_url:
+                            with open(tmp_path, "rb") as f:
+                                contrato.arquivo_docx.save(
+                                    f"{cliente.id}_{link.token}.docx", File(f), save=True,
+                                )
+                        if pdf_path and not supabase_pdf_url:
+                            with open(pdf_path, "rb") as f:
+                                contrato.arquivo_pdf.save(
+                                    f"{cliente.id}_{link.token}.pdf", File(f), save=True,
+                                )
+                        sucesso = True
 
-                if download_url and link.email_destinatario:
-                    enviar_email(
-                        destinatario=link.email_destinatario,
-                        assunto="Contrato gerado (PDF)",
-                        mensagem=(
-                            f"Ola {cliente.nome},\n\n"
-                            f"Seu contrato foi gerado. Baixe o PDF aqui:\n{download_url}\n\n"
-                            "Se voce nao reconhece este email, ignore esta mensagem."
-                        ),
+                if sucesso:
+                    if supabase_pdf_url:
+                        download_url = supabase_pdf_url
+                    elif pdf_path and contrato.arquivo_pdf:
+                        download_url = request.build_absolute_uri(contrato.arquivo_pdf.url)
+                    elif supabase_url:
+                        download_url = supabase_url
+                    elif contrato.arquivo_docx:
+                        download_url = request.build_absolute_uri(contrato.arquivo_docx.url)
+
+                    if download_url and link.email_destinatario:
+                        enviar_email(
+                            destinatario=link.email_destinatario,
+                            assunto="Contrato gerado (PDF)",
+                            mensagem=(
+                                f"Ola {cliente.nome},\n\n"
+                                f"Seu contrato foi gerado. Baixe o PDF aqui:\n{download_url}\n\n"
+                                "Se voce nao reconhece este email, ignore esta mensagem."
+                            ),
+                        )
+                    logger.info(
+                        "Contrato gerado: contrato_id=%s link=%s", contrato.id, link.token,
                     )
 
+            except Exception:
+                logger.exception(
+                    "Erro ao gerar contrato: link=%s modelo=%s org=%s",
+                    link.token, link.modelo_id, link.organizacao_id,
+                )
+                messages.error(
+                    request,
+                    "Ocorreu um erro ao gerar o contrato. Tente novamente ou contate o suporte.",
+                )
+            finally:
                 if pdf_path and os.path.exists(pdf_path):
                     os.remove(pdf_path)
-                os.remove(tmp_path)
-                link.utilizado = True
-                link.save()
-                sucesso = True
-
-            except Exception as e:
-                messages.error(request, f"Erro ao gerar contrato: {str(e)}")
+                if tmp_path and os.path.exists(tmp_path):
+                    os.remove(tmp_path)
 
     return render(request, "formulario_publico.html", {
         "link": link,
