@@ -17,7 +17,7 @@ env/
 *.log
 local_settings.py
 *.sqlite3
-/media/
+/media/contratos/
 /staticfiles/
 
 # dotenv
