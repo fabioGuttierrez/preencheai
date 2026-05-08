@@ -31,6 +31,9 @@
           <td class="text-muted font-monospace small">{{ m.arquivo_docx.name }}</td>
           <td class="text-muted small">{{ m.criado_em|date:"d/m/Y" }}</td>
           <td class="text-end pe-4">
+            <a href="/modelos/{{ m.pk }}/editar/" class="btn btn-sm btn-outline-secondary me-1" title="Editar modelo">
+              <i class="bi bi-pencil"></i>
+            </a>
             <a href="/modelos/{{ m.pk }}/campos/" class="btn btn-sm btn-outline-primary me-1" title="Configurar campos">
               <i class="bi bi-sliders"></i>
             </a>

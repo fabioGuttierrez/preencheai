@@ -19,6 +19,7 @@ urlpatterns = [
     # Modelos
     path("modelos/", views.modelos_lista, name="modelos_lista"),
     path("modelos/upload/", views.modelo_upload, name="modelo_upload"),
+    path("modelos/<int:pk>/editar/", views.modelo_editar, name="modelo_editar"),
     path("modelos/<int:pk>/campos/", views.modelo_campos_config, name="modelo_campos_config"),
     path("modelos/<int:pk>/deletar/", views.modelo_deletar, name="modelo_deletar"),
 

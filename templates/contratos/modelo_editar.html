@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Editar Modelo{% endblock %}
+{% block page_title %}Editar Modelo{% endblock %}
+{% block active_modelos %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+
+    <div class="card">
+      <div class="card-header py-3 px-4">
+        <i class="bi bi-pencil-square me-2 text-muted"></i>Editar Modelo
+      </div>
+      <div class="card-body px-4 py-4">
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Nome do modelo *</label>
+            <input type="text" name="nome" class="form-control" value="{{ modelo.nome }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Arquivo atual</label>
+            <div class="d-flex align-items-center gap-2 p-2 bg-light rounded border">
+              <i class="bi bi-file-earmark-word text-primary fs-5"></i>
+              <span class="font-monospace small text-muted">{{ modelo.arquivo_docx.name }}</span>
+              {% if modelo.arquivo_docx %}
+              <a href="{{ modelo.arquivo_docx.url }}" class="btn btn-sm btn-outline-secondary ms-auto" download title="Baixar arquivo atual">
+                <i class="bi bi-download"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold small">Substituir arquivo .docx <span class="text-muted fw-normal">(opcional)</span></label>
+            <input type="file" name="arquivo_docx" class="form-control" accept=".docx">
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              Ao enviar um novo arquivo, os campos existentes com os mesmos placeholders são preservados.
+              Placeholders removidos do novo arquivo terão seus campos desativados.
+              Novos placeholders encontrados gerarão campos automaticamente.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>Salvar
+            </button>
+            <a href="{% url 'modelo_campos_config' modelo.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-sliders me-1"></i>Configurar campos
+            </a>
+            <a href="{% url 'modelos_lista' %}" class="btn btn-outline-secondary ms-auto">Cancelar</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    {% with campos=modelo.campos.all %}
+    {% if campos %}
+    <div class="card mt-3">
+      <div class="card-header py-3 px-4">
+        <i class="bi bi-list-ul me-2 text-muted"></i>Campos configurados
+        <span class="badge bg-secondary ms-1">{{ campos.count }}</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="px-3">Placeholder</th>
+              <th>Label</th>
+              <th>Tipo</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in campos %}
+            <tr class="{% if not c.ativo %}text-muted{% endif %}">
+              <td class="px-3 font-monospace small">{% templatetag openvariable %}{{ c.placeholder }}{% templatetag closevariable %}</td>
+              <td class="small">{{ c.label }}</td>
+              <td class="small">{{ c.tipo }}</td>
+              <td>
+                {% if c.ativo %}
+                <span class="badge bg-success-subtle text-success">ativo</span>
+                {% else %}
+                <span class="badge bg-secondary-subtle text-secondary">desativado</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+  </div>
+</div>
+{% endblock %}

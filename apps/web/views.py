@@ -250,6 +250,83 @@ def modelo_upload(request):
 
 
 @login_required
+def modelo_editar(request, pk):
+    org = request.user.organizacao
+    modelo = get_object_or_404(ModeloContrato, pk=pk, organizacao=org, ativo=True)
+
+    if request.method == "POST":
+        nome = request.POST.get("nome", "").strip()
+        arquivo = request.FILES.get("arquivo_docx")
+
+        if not nome:
+            messages.error(request, "Nome é obrigatório.")
+            return render(request, "contratos/modelo_editar.html", {"modelo": modelo})
+
+        modelo.nome = nome
+
+        if arquivo:
+            if not arquivo.name.endswith(".docx"):
+                messages.error(request, "Apenas arquivos .docx são aceitos.")
+                return render(request, "contratos/modelo_editar.html", {"modelo": modelo})
+
+            modelo.arquivo_docx = arquivo
+            modelo.save()
+
+            try:
+                novos_placeholders = set(extrair_placeholders_docx(modelo.arquivo_docx.path))
+            except Exception:
+                logger.exception("Erro ao extrair placeholders do modelo id=%s ao editar", modelo.pk)
+                messages.error(request, "Erro ao ler o arquivo .docx enviado.")
+                return render(request, "contratos/modelo_editar.html", {"modelo": modelo})
+
+            campos_existentes = {c.placeholder: c for c in modelo.campos.all()}
+            placeholders_antigos = set(campos_existentes.keys())
+
+            # Desativar campos cujo placeholder sumiu do novo docx
+            removidos = placeholders_antigos - novos_placeholders
+            for placeholder in removidos:
+                campos_existentes[placeholder].ativo = False
+                campos_existentes[placeholder].save()
+
+            # Reativar ou criar campos para placeholders do novo docx
+            for ordem, placeholder in enumerate(sorted(novos_placeholders), start=1):
+                if placeholder in campos_existentes:
+                    campo = campos_existentes[placeholder]
+                    campo.ativo = True
+                    campo.save()
+                else:
+                    CampoTemplate.objects.create(
+                        modelo=modelo,
+                        placeholder=placeholder,
+                        label=_placeholder_para_label(placeholder),
+                        tipo=_inferir_tipo_placeholder(placeholder),
+                        obrigatorio=_placeholder_obrigatorio(placeholder),
+                        ordem=ordem,
+                    )
+
+            if removidos:
+                messages.warning(
+                    request,
+                    f"Placeholders removidos do novo arquivo (campos desativados): {', '.join(sorted(removidos))}",
+                )
+            adicionados = novos_placeholders - placeholders_antigos
+            if adicionados:
+                messages.info(
+                    request,
+                    f"Novos placeholders detectados: {', '.join(sorted(adicionados))}",
+                )
+
+            messages.success(request, f"Modelo '{nome}' atualizado com novo arquivo.")
+            return redirect("modelo_campos_config", pk=modelo.pk)
+
+        modelo.save()
+        messages.success(request, f"Modelo '{nome}' atualizado.")
+        return redirect("modelos_lista")
+
+    return render(request, "contratos/modelo_editar.html", {"modelo": modelo})
+
+
+@login_required
 def modelo_deletar(request, pk):
     org = request.user.organizacao
     modelo = get_object_or_404(ModeloContrato, pk=pk, organizacao=org)
